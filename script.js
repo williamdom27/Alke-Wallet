@@ -1,92 +1,123 @@
+/* =====================================================
+   TOASTS (ALERTAS ARRIBA – AZUL / GRIS)
+===================================================== */
 
-// Función cerrar sesión.
+function mostrarToast(texto, tipo = "primary") {
+
+    if ($(".toast-container-custom").length === 0) {
+        $("body").append('<div class="toast-container-custom"></div>');
+    }
+
+    const toastHTML = `
+        <div class="toast align-items-center text-bg-${tipo} border-0 mb-2">
+            <div class="d-flex">
+                <div class="toast-body fw-semibold">${texto}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    const toastElement = $(toastHTML);
+    $(".toast-container-custom").append(toastElement);
+
+    const toast = new bootstrap.Toast(toastElement[0], {
+        delay: 3000,
+        autohide: true
+    });
+
+    toast.show();
+
+    toastElement.on("hidden.bs.toast", () => toastElement.remove());
+}
+
+/* =====================================================
+   UTILIDAD MÓVIL
+===================================================== */
+
+function cerrarTeclado() {
+    document.activeElement.blur();
+}
+
+/* =====================================================
+   SESIÓN
+===================================================== */
 
 function cerrarSesion() {
     localStorage.removeItem("usuarioActivo");
-
-    // Redirección forzada (evita quedarse en dashboard).
-    window.location.replace("index.html");
+    window.location.replace("Loggin.html");
 }
 
-// Protección del dashboard.
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    if (window.location.pathname.includes("dashboard.html")) {
-
-        let usuarioActivo = localStorage.getItem("usuarioActivo");
-
-        if (!usuarioActivo) {
-            window.location.replace("index.html");
+document.addEventListener("DOMContentLoaded", () => {
+    if (location.pathname.includes("MenúBancario.html")) {
+        if (!localStorage.getItem("usuarioActivo")) {
+            window.location.replace("Loggin.html");
             return;
         }
-
         cargarDatos();
     }
 });
 
-// Registo.
+/* =====================================================
+   LOGIN / REGISTRO
+===================================================== */
 
 function registrar() {
-    let usuario = $("#usuario").val().trim();
-    let password = $("#password").val().trim();
+    const usuario = $("#usuario").val().trim();
+    const password = $("#password").val().trim();
 
-    if (usuario === "" || password === "") {
-        $("#mensaje").text("Complete todos los campos");
+    if (!usuario || !password) {
+        mostrarToast("Complete todos los campos", "secondary");
         return;
     }
 
-    let usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
+    const usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
 
     if (usuarios[usuario]) {
-        $("#mensaje").text("El usuario ya existe");
+        mostrarToast("El usuario ya existe", "secondary");
         return;
     }
 
     usuarios[usuario] = {
-        password: password,
+        password,
         saldo: 0,
         historial: []
     };
 
     localStorage.setItem("usuarios", JSON.stringify(usuarios));
-    $("#mensaje")
-        .text("Usuario registrado correctamente")
-        .removeClass("text-danger")
-        .addClass("text-success");
+    mostrarToast("Usuario registrado correctamente", "primary");
+    cerrarTeclado();
 }
 
-
-// Login.
-
 function login() {
-    let usuario = $("#usuario").val().trim();
-    let password = $("#password").val().trim();
-
-    let usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
+    const usuario = $("#usuario").val().trim();
+    const password = $("#password").val().trim();
+    const usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
 
     if (!usuarios[usuario] || usuarios[usuario].password !== password) {
-        $("#mensaje").text("Credenciales incorrectas");
+        mostrarToast("Credenciales incorrectas", "secondary");
         return;
     }
 
     localStorage.setItem("usuarioActivo", usuario);
-
-    // Redirección limpia.
-    window.location.replace("dashboard.html");
+    window.location.replace("MenúBancario.html");
 }
 
-// Carga de datos.
+/* =====================================================
+   CARGA DE DATOS
+===================================================== */
 
 function cargarDatos() {
-    let usuario = localStorage.getItem("usuarioActivo");
-    let usuarios = JSON.parse(localStorage.getItem("usuarios"));
+    const usuario = localStorage.getItem("usuarioActivo");
+    const usuarios = JSON.parse(localStorage.getItem("usuarios"));
 
     $("#saldo").text(usuarios[usuario].saldo);
     mostrarHistorial(usuarios[usuario].historial);
 }
 
-// Depósito y retiro.
+/* =====================================================
+   OPERACIONES
+===================================================== */
 
 function depositar() {
     operarSaldo("deposito");
@@ -97,80 +128,94 @@ function retirar() {
 }
 
 function operarSaldo(tipo) {
-    let monto = Number($("#monto").val());
+    const monto = Number($("#monto").val());
+    const usuario = localStorage.getItem("usuarioActivo");
+    const usuarios = JSON.parse(localStorage.getItem("usuarios"));
 
-    if (isNaN(monto) || monto <= 0) {
-        alert("Ingrese un monto válido");
+    if (!monto || monto <= 0) {
+        mostrarToast("Ingrese un monto válido", "secondary");
         return;
     }
 
-    let usuario = localStorage.getItem("usuarioActivo");
-    let usuarios = JSON.parse(localStorage.getItem("usuarios"));
-
     if (tipo === "retiro" && usuarios[usuario].saldo < monto) {
-        alert("Saldo insuficiente");
+        mostrarToast("Saldo insuficiente", "secondary");
         return;
     }
 
     if (tipo === "deposito") {
         usuarios[usuario].saldo += monto;
-        usuarios[usuario].historial.push(`DEPÓSITO: $${monto}`);
+        usuarios[usuario].historial.push(`➕ Depósito: $${monto}`);
+        mostrarToast("Depósito realizado", "primary");
     } else {
         usuarios[usuario].saldo -= monto;
-        usuarios[usuario].historial.push(`RETIRO: $${monto}`);
+        usuarios[usuario].historial.push(`➖ Retiro: $${monto}`);
+        mostrarToast("Retiro realizado", "secondary");
     }
 
     localStorage.setItem("usuarios", JSON.stringify(usuarios));
     $("#monto").val("");
+    cerrarTeclado();
     cargarDatos();
 }
 
-//Envío de dinero con nombre asignado.
+/* =====================================================
+   TRANSFERENCIAS
+===================================================== */
 
 function enviarDinero() {
-    let destino = $("#destino").val().trim();
-    let monto = Number($("#montoEnvio").val());
+    const destino = $("#destino").val().trim();
+    const monto = Number($("#montoEnvio").val());
+    const usuario = localStorage.getItem("usuarioActivo");
+    const usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
 
-    let usuario = localStorage.getItem("usuarioActivo");
-    let usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
-
-    if (destino === "" || isNaN(monto) || monto <= 0) {
-        alert("Datos inválidos");
-        return;
-    }
-
-    if (usuarios[usuario].saldo < monto) {
-        alert("Saldo insuficiente");
+    if (!destino || !monto || monto <= 0) {
+        mostrarToast("Datos inválidos", "secondary");
         return;
     }
 
     if (!usuarios[destino]) {
-        usuarios[destino] = {
-            password: "1234",
-            saldo: 0,
-            historial: []
-        };
+        mostrarToast("Usuario destino no existe", "secondary");
+        return;
+    }
+
+    if (usuarios[usuario].saldo < monto) {
+        mostrarToast("Saldo insuficiente", "secondary");
+        return;
     }
 
     usuarios[usuario].saldo -= monto;
     usuarios[destino].saldo += monto;
 
-    usuarios[usuario].historial.push(`ENVÍO a ${destino}: $${monto}`);
-    usuarios[destino].historial.push(`RECIBIDO de ${usuario}: $${monto}`);
+    usuarios[usuario].historial.push(`📤 Envío a ${destino}: $${monto}`);
+    usuarios[destino].historial.push(`📥 Recibido de ${usuario}: $${monto}`);
 
     localStorage.setItem("usuarios", JSON.stringify(usuarios));
 
     $("#destino").val("");
     $("#montoEnvio").val("");
+    cerrarTeclado();
 
+    mostrarToast("Transferencia exitosa", "primary");
     cargarDatos();
 }
 
-// Historial.
+/* =====================================================
+   HISTORIAL (MÁS RECIENTE ARRIBA)
+===================================================== */
 
 function mostrarHistorial(historial) {
     $("#historial").html("");
-    historial.forEach(item => {
-        $("#historial").append(`<li class="list-group-item">${item}</li>`);
+
+    // Mostrar desde la transacción más reciente
+    [...historial].reverse().forEach(item => {
+        let clase = "list-group-item";
+
+        if (item.includes("Depósito") || item.includes("Envío")) {
+            clase += " text-primary";
+        } else {
+            clase += " text-secondary";
+        }
+
+        $("#historial").append(`<li class="${clase}">${item}</li>`);
     });
 }
