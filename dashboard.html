@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Alke Wallet - Panel</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Barra superior -->
+<nav class="navbar navbar-dark bg-primary">
+    <div class="container-fluid">
+        <span class="navbar-brand">Alke Wallet</span>
+        <button class="btn btn-light" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+</nav>
+
+<div class="container mt-4">
+
+    <!-- Saldo -->
+    <h4>Saldo disponible: $<span id="saldo">0</span></h4>
+
+    <!-- Depósitos y retiros -->
+    <div class="row mt-3">
+        <div class="col-md-4">
+            <input type="number" id="monto" class="form-control" placeholder="Monto">
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-success w-100" onclick="depositar()">Depositar</button>
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-danger w-100" onclick="retirar()">Retirar</button>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- Envío de dinero -->
+    <h5>Enviar dinero</h5>
+    <input type="text" id="destino" class="form-control mt-2" placeholder="Usuario destino">
+    <input type="number" id="montoEnvio" class="form-control mt-2" placeholder="Monto">
+    <button class="btn btn-warning mt-2" onclick="enviarDinero()">Enviar</button>
+
+    <hr>
+
+    <!-- Historial -->
+    <h5>Historial de transacciones</h5>
+    <ul id="historial" class="list-group"></ul>
+
+</div>
+
+<!-- JQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- JS -->
+<script src="script.js"></script>
+</body>
+</html>
